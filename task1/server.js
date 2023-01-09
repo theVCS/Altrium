@@ -3,14 +3,16 @@ const app = express();
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
-const username = "admin";
-const password = "Prince#97808";
+require("dotenv").config();
+
+const username = process.env.USER;
+const password = process.env.PASSWORD;
 const adminPassword = encodeURIComponent(password);
 
-const url = "mongodb://127.0.0.1:27017";
 const database = "userDashBoard";
 const coll = "graphCollection";
-
+// console.log(username)
+// console.log(password)
 const uri = `mongodb+srv://${username}:${adminPassword}@cluster1.sjhpbbx.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -24,7 +26,10 @@ async function dbConnect() {
   return db.collection(coll);
 }
 
-app.listen(8080);
+app.listen(8080, function () {
+  console.log("callback function");
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
@@ -79,6 +84,5 @@ app.post("/saveConfig", async (req, res) => {
   r = await db.deleteMany({});
   console.log(r);
   r = await db.insertMany(data);
-  console.log(r);
   res.send({ sccess: true });
 });
