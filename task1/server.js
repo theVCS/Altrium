@@ -1,30 +1,30 @@
 const express = require("express");
 const app = express();
-
-const { MongoClient, ServerApiVersion } = require("mongodb");
-
+const mongoose = require("mongoose");
 require("dotenv").config();
+const Schema = mongoose.Schema;
+mongoose.set('strictQuery', true);
+
+const GraphSchema = new Schema({
+  x: String,
+  y: String,
+  w: String,
+  h: String,
+  id: String,
+  content: String,
+  type: String,
+});
+
+const grpModel = mongoose.model('graph', GraphSchema)
 
 const username = process.env.USER;
 const password = process.env.PASSWORD;
 const adminPassword = encodeURIComponent(password);
-
 const database = "userDashBoard";
 const coll = "graphCollection";
-// console.log(username)
-// console.log(password)
 const uri = `mongodb+srv://${username}:${adminPassword}@cluster1.sjhpbbx.mongodb.net/?retryWrites=true&w=majority`;
-const client = new MongoClient(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverApi: ServerApiVersion.v1,
-});
+mongoose.connect(uri).then(() => console.log("Connected!"));
 
-async function dbConnect() {
-  let result = await client.connect();
-  let db = result.db(database);
-  return db.collection(coll);
-}
 
 app.listen(8080, function () {
   console.log("callback function");
@@ -49,13 +49,12 @@ app.post("/", (req, res) => {
   let x = new Array();
 
   for (let index = 1; index <= len; index++) x.push(index);
-
+  
   res.send({ x: x, y: y });
 });
 
 app.post("/getData", async (req, res) => {
-  const db = await dbConnect();
-  const data = await db.find().toArray();
+  const data = await grpModel.find();
   let metaData = [];
   let gridData = [];
 
@@ -79,10 +78,16 @@ app.post("/getData", async (req, res) => {
 
 app.post("/saveConfig", async (req, res) => {
   const data = req.body.data;
-  const db = await dbConnect();
+
   let r = "";
-  r = await db.deleteMany({});
-  console.log(r);
-  r = await db.insertMany(data);
+  r = await grpModel.deleteMany({});
+
+  if(data!=undefined)
+  for(const d of data)
+  {
+    r = new grpModel(d);
+    let result = await r.save();
+  }
+
   res.send({ sccess: true });
 });
