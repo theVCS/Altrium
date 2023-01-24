@@ -13,6 +13,8 @@ const GraphSchema = new Schema({
   id: String,
   content: String,
   type: String,
+  row: String,
+  col: String,
 });
 
 const grpModel = mongoose.model('graph', GraphSchema)
@@ -70,6 +72,8 @@ app.post("/getData", async (req, res) => {
     metaData.push({
       id: item.id,
       type: item.type,
+      row: item.row,
+      col: item.col,
     });
   }
 
@@ -78,6 +82,7 @@ app.post("/getData", async (req, res) => {
 
 app.post("/saveConfig", async (req, res) => {
   const data = req.body.data;
+  // console.log(data);
 
   let r = "";
   r = await grpModel.deleteMany({});

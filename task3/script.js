@@ -4,6 +4,31 @@ let index = 0;
 let flag = true;
 let currId = "dragGrp";
 
+function getTableData(row, col) {
+  let content = `<table class="table" row=${row} col=${col}>
+    <thead>
+      <tr>`;
+
+  for (let index = 0; index < col; index++) {
+    content += `<th scope="col">col${index + 1}</th>`;
+  }
+
+  content += `</tr>
+    </thead>
+    <tbody>`;
+
+  for (let index = 0; index < row; index++) {
+    content += `<tr>`;
+    for (let index2 = 0; index2 < col; index2++) {
+      content += `<th scope="row">data${index2 + 1}</th>`;
+    }
+    content += `</tr>`;
+  }
+
+  content += `</tbody></table>`;
+  return content;
+}
+
 function makeid(length) {
   var result = "";
   var characters =
@@ -79,11 +104,29 @@ async function addDataToGraph(id, type) {
 
 async function InitDashBoard() {
   const data = await getDashBoardData();
+
+  for (let index = 0; index < data.gridData.length; index++) {
+    if (data.metaData[index].type == "table") {
+      const element = data.gridData[index];
+      console.log(element);
+      data.gridData[index].content = getTableData(
+        data.metaData[index].row,
+        data.metaData[index].col
+      );
+    }else if(data.metaData[index].type == "text")
+    {
+      data.gridData[index].content = `<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Suscipit maiores tempora aliquid saepe consequuntur nemo, tenetur pariatur dolore sunt accusamus reiciendis soluta ut. Dolores vel doloribus quisquam, quis assumenda qui eos, possimus enim tempora voluptatem itaque cum quos quia commodi nemo dolorum, animi porro maxime.</p>`;
+    }
+  }
+
   grid.load(data.gridData);
 
   for (item of data.metaData) {
-    if(item.type=="table")continue;
-    addDataToGraph(item.id, item.type);
+    if (item.type == "table") {
+      continue;
+    } else {
+      addDataToGraph(item.id, item.type);
+    }
   }
 
   addDataToGraph(currId, grpType[index]);
@@ -122,11 +165,8 @@ async function saveConfiguration() {
   var items = [];
 
   for (const ele of $(".grid-stack-item")) {
-    let canvas = ele
-      .querySelector(".grid-stack-item-content")
-      .querySelector("canvas");
-
-    if (canvas === null) {
+    // table
+    if (ele.querySelector(".grid-stack-item-content").querySelector("table")) {
       const content = ele
         .querySelector(".grid-stack-item-content")
         .querySelector("table");
@@ -136,11 +176,17 @@ async function saveConfiguration() {
         y: ele.getAttribute("gs-y"),
         w: ele.getAttribute("gs-w"),
         h: ele.getAttribute("gs-h"),
-        content: content,
-        id: "none",
+        row: content.getAttribute("row"),
+        col: content.getAttribute("col"),
         type: "table",
       });
-    } else {
+    } else if (
+      // graph
+      ele.querySelector(".grid-stack-item-content").querySelector("canvas")
+    ) {
+      let canvas = ele
+        .querySelector(".grid-stack-item-content")
+        .querySelector("canvas");
       const id = canvas.id;
       let graph = Chart.getChart(id);
       if (id == currId) continue;
@@ -156,7 +202,17 @@ async function saveConfiguration() {
         type: type,
       });
     }
+    else{
+      items.push({
+        x: ele.getAttribute("gs-x"),
+        y: ele.getAttribute("gs-y"),
+        w: ele.getAttribute("gs-w"),
+        h: ele.getAttribute("gs-h"),
+        type: "text",
+      });
+    }
   }
+
   $.post(
     "http://127.0.0.1:8080/saveConfig",
     { data: items },
@@ -173,7 +229,8 @@ function compact() {
 function addTable() {
   const constriant = 10;
   const row = prompt("enter row count");
-  const col = parseInt(prompt("enter col count"));
+  const col = prompt("enter col count");
+
   if (
     !parseInt(row) ||
     !parseInt(col) ||
@@ -182,8 +239,7 @@ function addTable() {
   ) {
     alert(`please enter an integer and must be less than ${constriant}`);
   } else {
-    const newId = makeid(20);
-    let content = `<table class="table">
+    let content = `<table class="table" row=${row} col=${col}>
     <thead>
       <tr>`;
 
@@ -205,9 +261,14 @@ function addTable() {
 
     content += `</tbody></table>`;
     grid.addWidget({ x: 0, y: 100, w: 4, h: 3, content: content });
-    addDataToGraph(newId, type);
     flag = false;
   }
+}
+
+function addText() {
+  let content = `<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Suscipit maiores tempora aliquid saepe consequuntur nemo, tenetur pariatur dolore sunt accusamus reiciendis soluta ut. Dolores vel doloribus quisquam, quis assumenda qui eos, possimus enim tempora voluptatem itaque cum quos quia commodi nemo dolorum, animi porro maxime.</p>`;
+  grid.addWidget({ x: 0, y: 100, w: 4, h: 3, content: content });
+  flag = false;
 }
 
 InitDashBoard();
